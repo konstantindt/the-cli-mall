@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.List;
+import java.util.Optional;
 
 import javax.money.Monetary;
 
@@ -167,7 +168,14 @@ public class BasketServiceTest {
         basket.add(product0);
         basket.add(product1);
 
-        final var totalResult = this.basketService.getTotal(basket, currencyUnit);
+        final var totalResult = this.basketService.getTotal(
+            basket,
+            currencyUnit,
+            (b) -> {
+                Assertions.assertEquals(basket, b);
+                return Optional.empty();
+            }
+        );
 
         Assertions.assertNotNull(totalResult);
         Assertions.assertEquals(total, totalResult);
@@ -187,7 +195,14 @@ public class BasketServiceTest {
 
         basket.add(product);
 
-        final var totalResult = this.basketService.getTotal(basket, currencyUnit);
+        final var totalResult = this.basketService.getTotal(
+            basket,
+            currencyUnit,
+            (b) -> {
+                Assertions.assertEquals(basket, b);
+                return Optional.empty();
+            }
+        );
 
         Assertions.assertNotNull(totalResult);
         Assertions.assertEquals(total, totalResult);
@@ -199,7 +214,42 @@ public class BasketServiceTest {
         final var total = Money.of(0, currencyUnit);
         final List<Product> basket = Collections.emptyList();
 
-        final var totalResult = this.basketService.getTotal(basket, currencyUnit);
+        final var totalResult = this.basketService.getTotal(
+            basket,
+            currencyUnit,
+            (b) -> {
+                Assertions.assertEquals(basket, b);
+                return Optional.empty();
+            }
+        );
+
+        Assertions.assertNotNull(totalResult);
+        Assertions.assertEquals(total, totalResult);
+    }
+
+    @Test
+    public void getTotalDiscountAppliedTest() {
+        final var currencyUnit = Monetary.getCurrency(Locale.UK);
+        final var productId = "1";
+        final var price = Money.of(3, currencyUnit);
+        final var discount = Money.of(1, currencyUnit);
+        final var total = Money.of(2, currencyUnit);
+        final var product = new Product();
+        final var basket = new ArrayList<Product>();
+
+        product.setId(productId);
+        product.setPrice(price);
+
+        basket.add(product);
+
+        final var totalResult = this.basketService.getTotal(
+            basket,
+            currencyUnit,
+            (b) -> {
+                Assertions.assertEquals(basket, b);
+                return Optional.of(discount);
+            }
+        );
 
         Assertions.assertNotNull(totalResult);
         Assertions.assertEquals(total, totalResult);

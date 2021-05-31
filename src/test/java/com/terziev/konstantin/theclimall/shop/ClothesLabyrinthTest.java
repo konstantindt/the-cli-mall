@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import javax.money.Monetary;
+import javax.money.MonetaryAmount;
 
 import org.javamoney.moneta.Money;
 
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -251,20 +254,210 @@ public class ClothesLabyrinthTest {
         Mockito.when(productService.getCurrencyUnit()).thenReturn(currencyUnit);
         Mockito.when(basketService.getTotal(
             ArgumentMatchers.eq(basket),
-            ArgumentMatchers.eq(currencyUnit)
+            ArgumentMatchers.eq(currencyUnit),
+            ArgumentMatchers.any()
         )).thenReturn(total);
 
         this.clothesLabyrinth.getBasketTotal();
 
         Mockito.verify(basketService).getTotal(
             ArgumentMatchers.eq(basket),
-            ArgumentMatchers.eq(currencyUnit)
+            ArgumentMatchers.eq(currencyUnit),
+            ArgumentMatchers.any()
         );
         Mockito.verify(productMapper).priceToStr(
             ArgumentMatchers.eq(total),
             ArgumentMatchers.eq(locale)
         );
         Mockito.verify(productService, Mockito.never()).getUnknownMessage();
+    }
+
+    @Test
+    public void getBasketTotalNoDiscountTest() {
+        final var productId = "1";
+        final var product = new Product();
+        final var locale = Locale.UK;
+        final var currencyUnit = Monetary.getCurrency(locale);
+        final var price = Money.of(3, currencyUnit);
+        final var total = Money.of(3, currencyUnit);
+        final var basket = this.clothesLabyrinth.getBasket();
+        final ArgumentCaptor<Function<List<Product>, Optional<MonetaryAmount>>> discountCalculatorCaptor = ArgumentCaptor.forClass(Function.class);
+
+        product.setId(productId);
+        product.setPrice(price);
+
+        basket.add(product);
+
+        Mockito.when(productService.getLocale()).thenReturn(locale);
+        Mockito.when(productService.getCurrencyUnit()).thenReturn(currencyUnit);
+        Mockito.when(basketService.getTotal(
+            ArgumentMatchers.eq(basket),
+            ArgumentMatchers.eq(currencyUnit),
+            ArgumentMatchers.any()
+        )).thenReturn(total);
+
+        this.clothesLabyrinth.getBasketTotal();
+
+        Mockito.verify(basketService).getTotal(
+            ArgumentMatchers.eq(basket),
+            ArgumentMatchers.eq(currencyUnit),
+            discountCalculatorCaptor.capture()
+        );
+        Mockito.verify(productMapper).priceToStr(
+            ArgumentMatchers.eq(total),
+            ArgumentMatchers.eq(locale)
+        );
+        Mockito.verify(productService, Mockito.never()).getUnknownMessage();
+
+        final var optionalDiscount = discountCalculatorCaptor.getValue().apply(basket);
+
+        Assertions.assertFalse(optionalDiscount.isPresent());
+    }
+
+    @Test
+    public void getBasketTotal1DiscountTest() {
+        final var productId0 = "1";
+        final var productId1 = "2";
+        final var productId2 = "3";
+        final var productId3 = "4";
+        final var productId4 = "5";
+        final var product0 = new Product();
+        final var product1 = new Product();
+        final var product2 = new Product();
+        final var product3 = new Product();
+        final var product4 = new Product();
+        final var locale = Locale.UK;
+        final var currencyUnit = Monetary.getCurrency(locale);
+        final var price0 = Money.of(5, currencyUnit);
+        final var price1 = Money.of(4, currencyUnit);
+        final var price2 = Money.of(3, currencyUnit);
+        final var price3 = Money.of(2, currencyUnit);
+        final var price4 = Money.of(1, currencyUnit);
+        final var total = Money.of(14, currencyUnit);
+        final var basket = this.clothesLabyrinth.getBasket();
+        final ArgumentCaptor<Function<List<Product>, Optional<MonetaryAmount>>> discountCalculatorCaptor = ArgumentCaptor.forClass(Function.class);
+
+        product0.setId(productId0);
+        product0.setPrice(price0);
+        product1.setId(productId1);
+        product1.setPrice(price1);
+        product2.setId(productId2);
+        product2.setPrice(price2);
+        product3.setId(productId3);
+        product3.setPrice(price3);
+        product4.setId(productId4);
+        product4.setPrice(price4);
+
+        basket.add(product0);
+        basket.add(product1);
+        basket.add(product2);
+        basket.add(product3);
+        basket.add(product4);
+
+        Mockito.when(productService.getLocale()).thenReturn(locale);
+        Mockito.when(productService.getCurrencyUnit()).thenReturn(currencyUnit);
+        Mockito.when(basketService.getTotal(
+            ArgumentMatchers.eq(basket),
+            ArgumentMatchers.eq(currencyUnit),
+            ArgumentMatchers.any()
+        )).thenReturn(total);
+
+        this.clothesLabyrinth.getBasketTotal();
+
+        Mockito.verify(basketService).getTotal(
+            ArgumentMatchers.eq(basket),
+            ArgumentMatchers.eq(currencyUnit),
+            discountCalculatorCaptor.capture()
+        );
+        Mockito.verify(productMapper).priceToStr(
+            ArgumentMatchers.eq(total),
+            ArgumentMatchers.eq(locale)
+        );
+        Mockito.verify(productService, Mockito.never()).getUnknownMessage();
+
+        final var optionalDiscount = discountCalculatorCaptor.getValue().apply(basket);
+
+        Assertions.assertTrue(optionalDiscount.isPresent());
+        Assertions.assertEquals(price4, optionalDiscount.get());
+    }
+
+    @Test
+    public void getBasketTotal2DiscountsTest() {
+        final var productId0 = "1";
+        final var productId1 = "2";
+        final var productId2 = "3";
+        final var productId3 = "4";
+        final var productId4 = "5";
+        final var productId5 = "6";
+        final var productId6 = "7";
+        final var product0 = new Product();
+        final var product1 = new Product();
+        final var product2 = new Product();
+        final var product3 = new Product();
+        final var product4 = new Product();
+        final var product5 = new Product();
+        final var product6 = new Product();
+        final var locale = Locale.UK;
+        final var currencyUnit = Monetary.getCurrency(locale);
+        final var price0 = Money.of(7, currencyUnit);
+        final var price1 = Money.of(6, currencyUnit);
+        final var price2 = Money.of(5, currencyUnit);
+        final var price3 = Money.of(4, currencyUnit);
+        final var price4 = Money.of(3, currencyUnit);
+        final var price5 = Money.of(2, currencyUnit);
+        final var price6 = Money.of(1, currencyUnit);
+        final var total = Money.of(25, currencyUnit);
+        final var basket = this.clothesLabyrinth.getBasket();
+        final ArgumentCaptor<Function<List<Product>, Optional<MonetaryAmount>>> discountCalculatorCaptor = ArgumentCaptor.forClass(Function.class);
+
+        product0.setId(productId0);
+        product0.setPrice(price0);
+        product1.setId(productId1);
+        product1.setPrice(price1);
+        product2.setId(productId2);
+        product2.setPrice(price2);
+        product3.setId(productId3);
+        product3.setPrice(price3);
+        product4.setId(productId4);
+        product4.setPrice(price4);
+        product5.setId(productId5);
+        product5.setPrice(price5);
+        product6.setId(productId6);
+        product6.setPrice(price6);
+
+        basket.add(product0);
+        basket.add(product1);
+        basket.add(product2);
+        basket.add(product3);
+        basket.add(product4);
+        basket.add(product5);
+        basket.add(product6);
+
+        Mockito.when(productService.getLocale()).thenReturn(locale);
+        Mockito.when(productService.getCurrencyUnit()).thenReturn(currencyUnit);
+        Mockito.when(basketService.getTotal(
+            ArgumentMatchers.eq(basket),
+            ArgumentMatchers.eq(currencyUnit),
+            ArgumentMatchers.any()
+        )).thenReturn(total);
+
+        this.clothesLabyrinth.getBasketTotal();
+
+        Mockito.verify(basketService).getTotal(
+            ArgumentMatchers.eq(basket),
+            ArgumentMatchers.eq(currencyUnit),
+            discountCalculatorCaptor.capture()
+        );
+        Mockito.verify(productMapper).priceToStr(
+            ArgumentMatchers.eq(total),
+            ArgumentMatchers.eq(locale)
+        );
+        Mockito.verify(productService, Mockito.never()).getUnknownMessage();
+
+        final var optionalDiscount = discountCalculatorCaptor.getValue().apply(basket);
+
+        Assertions.assertTrue(optionalDiscount.isPresent());
+        Assertions.assertEquals(price5.add(price6), optionalDiscount.get());
     }
 
 }

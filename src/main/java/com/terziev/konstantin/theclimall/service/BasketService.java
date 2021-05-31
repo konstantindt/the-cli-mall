@@ -5,6 +5,8 @@ import com.terziev.konstantin.theclimall.service.ProductService;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.function.Function;
 
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -33,10 +35,18 @@ public class BasketService {
     }
 
     public MonetaryAmount getTotal(@NonNull final List<Product> basket,
-                                   @NonNull final CurrencyUnit currencyUnit) {
-        return basket.stream()
+                                   @NonNull final CurrencyUnit currencyUnit,
+                                   @NonNull final Function<List<Product>, Optional<MonetaryAmount>> discountCalculator) {
+        final var total = basket.stream()
             .map(Product::getPrice)
             .reduce(Money.of(0, currencyUnit), MonetaryAmount::add);
+        final var optionalDiscount = discountCalculator.apply(basket);
+
+        if (optionalDiscount.isPresent()) {
+            return total.subtract(optionalDiscount.get());
+        }
+
+        return total;
     }
 
     public String getSuccessMessage() {
