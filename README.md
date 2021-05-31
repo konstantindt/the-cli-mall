@@ -2,7 +2,7 @@
 
 Project to demonstrate Java CLI frameworks. Each shop is implemented in a different framework.
 
-Curretly only featuring [cliche](https://code.google.com/archive/p/cliche/).
+Currently only featuring [cliche](https://code.google.com/archive/p/cliche/).
 
 ## Example usage
 
